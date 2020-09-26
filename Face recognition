@@ -1,0 +1,58 @@
+#The modules listed below are mandatory to install 
+import cv2
+import face_recognition as fr
+import numpy as np
+# this is used for giving vocal instruction (this is optional)
+import pyttsx3 
+
+
+
+# initialization
+
+video_capture = cv2.VideoCapture(0)
+voiceEngine =pyttsx3.init()
+
+# Loading the base image
+My_image = fr.load_image_file("create a directorty and put your images there, one clear image would be great")
+My_image_encoding = fr.face_encodings(My_image)[0]
+known_face_encondings = [My_image_encoding]
+known_face_names = ["write your name here to display it"]
+
+
+
+# Putting a while loop to keep taking each frame coming from the camera to process it
+while True:
+    ret, frame = video_capture.read(0)
+    flipCamera = cv2.flip(frame,1,0) # this is optional line of code, this is used to be like looking at mirror 
+    rgb_frame = flipCamera[:, :, ::1]
+    face_locations = fr.face_locations(rgb_frame)
+    face_encodings = fr.face_encodings(rgb_frame, face_locations)
+
+
+    for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+
+        matches = fr.compare_faces(known_face_encondings, face_encoding)
+
+        name = "Unknown"
+
+        face_distances = fr.face_distance(known_face_encondings, face_encoding)
+
+        best_match_index = np.argmin(face_distances)
+        if matches[best_match_index]:
+            name = known_face_names[best_match_index]
+            # the two lines of code below are used to speack out your name
+            voiceEngine.say("your name is "+name)
+            voiceEngine.runAndWait()
+            # the numbers below indicate the color of the box that will surround your face, you can change them if you like
+        cv2.rectangle(flipCamera, (left, top), (right, bottom), (0, 255, 255), 1)
+        cv2.rectangle(flipCamera, (left, bottom - 35), (right, bottom), (0, 255, 255), cv2.FILLED)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(flipCamera, name, (left + 6, bottom - 6), font, 1, (0, 0, 0), 2) # same goes here you change the color of the text
+
+    cv2.imshow("My webcam", flipCamera)
+# exsiting the camera function by pressing q, you can specify and letter 
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+video_capture.release()
+cv2.destroyAllWindows()
